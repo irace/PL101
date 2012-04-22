@@ -1,6 +1,8 @@
 var endTime = function (startTime, expr) {
     var duration = function (expr) {
-        if (expr.tag === 'note') {
+        if (expr.tag === 'rest') {
+            return expr.duration;
+        } if (expr.tag === 'note') {
             return expr.dur;
         } else if (expr.tag === 'seq') {
             return duration(expr.left) + duration(expr.right);
@@ -24,7 +26,7 @@ var compile = function(musexpr) {
         } else if (expr.tag === 'seq') {
             buildNotes(expr.left, startTime);
             buildNotes(expr.right, endTime(startTime, expr.left));
-        } else {
+        } else if (expr.tag === 'par') {
             buildNotes(expr.left, startTime);
             buildNotes(expr.right, startTime);
         }
@@ -53,9 +55,8 @@ var test = {
     right: {
         tag: 'seq',
         left: {
-            tag: 'note',
-            pitch: 'c4',
-            dur: 500
+            tag: 'rest',
+            duration: 500
         },
         right: {
             tag: 'note',
