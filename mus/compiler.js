@@ -1,6 +1,12 @@
+/*
+ * TODO: This is pretty gross and probably not necessary - look at some of the other solutions
+ */
+
 var endTime = function (startTime, expr) {
     var duration = function (expr) {
-        if (expr.tag === 'rest') {
+        if (expr.tag === 'repeat') {
+            return expr.count * duration(expr.section);
+        } else if (expr.tag === 'rest') {
             return expr.duration;
         } if (expr.tag === 'note') {
             return expr.dur;
@@ -20,7 +26,13 @@ var compile = function(musexpr) {
     var notes = [];
 
     (function buildNotes(expr, startTime) {
-        if (expr.tag === 'note') {
+        if (expr.tag === 'repeat') {
+            var sectionDuration = endTime(startTime, expr.section) - startTime;
+
+            for (var i = 0; i < expr.count; i++) {
+                buildNotes(expr.section, startTime + (sectionDuration * i));
+            }
+        } else if (expr.tag === 'note') {
             notes.push({
                 tag: 'note',
                 pitch: convertPitch(expr.pitch),
@@ -53,9 +65,13 @@ var test = {
     left: {
         tag: 'seq',
         left: {
-            tag: 'note',
-            pitch: 'a4',
-            dur: 250
+            tag: 'repeat',
+            section: {
+                tag: 'note',
+                pitch: 'a4',
+                dur: 250
+            },
+            count: 5
         },
         right: {
             tag: 'note',
