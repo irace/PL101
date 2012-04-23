@@ -21,8 +21,12 @@ var compile = function(musexpr) {
 
     (function buildNotes(expr, startTime) {
         if (expr.tag === 'note') {
-            expr.start = startTime;
-            notes.push(expr);
+            notes.push({
+                tag: 'note',
+                pitch: convertPitch(expr.pitch),
+                dur: expr.dur,
+                start: startTime
+            });
         } else if (expr.tag === 'seq') {
             buildNotes(expr.left, startTime);
             buildNotes(expr.right, endTime(startTime, expr.left));
@@ -33,6 +37,13 @@ var compile = function(musexpr) {
     })(musexpr, 0);
 
     return notes;
+};
+
+var convertPitch = function(pitch) {
+    var letter = pitch[0],
+        octave = pitch[1];
+
+    return 12 + 12 * octave + "c d ef g a b".indexOf(letter);
 };
 
 // Tests
