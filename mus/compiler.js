@@ -1,50 +1,35 @@
-/*
- * TODO: This is pretty gross and probably not necessary - look at some of the other solutions
- */
-
-var endTime = function (startTime, expr) {
-    var duration = function (expr) {
-        if (expr.tag === 'repeat') {
-            return expr.count * duration(expr.section);
-        } else if (expr.tag === 'rest') {
-            return expr.duration;
-        } if (expr.tag === 'note') {
-            return expr.dur;
-        } else if (expr.tag === 'seq') {
-            return duration(expr.left) + duration(expr.right);
-        } else {
-            var leftDuration = duration(expr.left),
-                rightDuration = duration(expr.right);
-            return leftDuration > rightDuration ? leftDuration : rightDuration;
-        }
-    };
-
-    return startTime + duration(expr);
-};
-
 var compile = function(musexpr) {
     var notes = [];
 
     (function buildNotes(expr, startTime) {
-        if (expr.tag === 'repeat') {
-            var sectionDuration = endTime(startTime, expr.section) - startTime;
+        switch (expr.tag) {
+            case 'rest':
+                return startTime + expr.duration;
+            case 'repeat':
+                for (var i = 0; i < expr.count; i++) {
+                    startTime = buildNotes(expr.section, startTime);
+                }
 
-            for (var i = 0; i < expr.count; i++) {
-                buildNotes(expr.section, startTime + (sectionDuration * i));
-            }
-        } else if (expr.tag === 'note') {
-            notes.push({
-                tag: 'note',
-                pitch: convertPitch(expr.pitch),
-                dur: expr.dur,
-                start: startTime
-            });
-        } else if (expr.tag === 'seq') {
-            buildNotes(expr.left, startTime);
-            buildNotes(expr.right, endTime(startTime, expr.left));
-        } else if (expr.tag === 'par') {
-            buildNotes(expr.left, startTime);
-            buildNotes(expr.right, startTime);
+                return startTime;
+            case 'note':
+                notes.push({
+                    tag: 'note',
+                    pitch: convertPitch(expr.pitch),
+                    dur: expr.dur,
+                    start: startTime
+                });
+
+                return startTime + expr.dur;
+            case 'seq':
+                startTime = buildNotes(expr.left, startTime);
+                startTime = buildNotes(expr.right, startTime);
+
+                return startTime;
+            case 'par':
+                var leftTime = buildNotes(expr.left, startTime);
+                var rightTime = buildNotes(expr.right, startTime);
+
+                return leftTime > rightTime ? leftTime : rightTime;
         }
     })(musexpr, 0);
 
